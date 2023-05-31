@@ -1,0 +1,1 @@
+This program unzips nested zip files automatically and preserves the directory structre. 
