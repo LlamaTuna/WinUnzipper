@@ -1,4 +1,4 @@
-from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QPushButton, QFileDialog, QProgressBar, QTextBrowser, QLabel
+from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QPushButton, QFileDialog, QProgressBar, QTextBrowser, QLabel, QMessageBox
 from PyQt6.QtCore import QThread, pyqtSignal
 import os
 import zipfile
@@ -41,9 +41,9 @@ class GUI(QWidget):
         layout.addWidget(self.btn_select_dest)
         layout.addWidget(self.dest_dir_label)
 
-        self.btn_start_unzip = QPushButton('Unzip Files', self)
-        self.btn_start_unzip.clicked.connect(self.start_unzip)
-        layout.addWidget(self.btn_start_unzip)
+        self.btn_unzip = QPushButton('Unzip files', self)
+        self.btn_unzip.clicked.connect(self.start_unzip)
+        layout.addWidget(self.btn_unzip)
 
         self.progress = QProgressBar(self)
         layout.addWidget(self.progress)
@@ -60,10 +60,26 @@ class GUI(QWidget):
         self.dest_dir_label.setText(f'Selected destination: {self.dest_dir}')
 
     def start_unzip(self):
-        self.unzipper_thread = UnzipThread(self.source_dir, self.dest_dir)
-        self.unzipper_thread.progress_signal.connect(self.update_progress)
-        self.unzipper_thread.log_signal.connect(self.update_log)
-        self.unzipper_thread.start()
+        if os.path.exists(self.dest_dir) and os.listdir(self.dest_dir):
+            msg = QMessageBox()
+            msg.setIcon(QMessageBox.Icon.Question)
+            msg.setText("The destination directory is not empty. Do you want to overwrite existing files?")
+            msg.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
+            retval = msg.exec()  # change here
+            if retval == QMessageBox.StandardButton.Yes:
+                self.unzipper_thread = UnzipThread(self.source_dir, self.dest_dir)
+                self.unzipper_thread.progress_signal.connect(self.update_progress)
+                self.unzipper_thread.log_signal.connect(self.update_log)
+                self.unzipper_thread.start()
+            else:
+                # Handle case where user does not want to overwrite
+                pass
+        else:
+            self.unzipper_thread = UnzipThread(self.source_dir, self.dest_dir)
+            self.unzipper_thread.progress_signal.connect(self.update_progress)
+            self.unzipper_thread.log_signal.connect(self.update_log)
+            self.unzipper_thread.start()
+
 
     def update_progress(self, value):
         # update the progress bar value
